@@ -15,6 +15,6 @@ sudo ./logger
 
 
 # Software Setup
-Download [lgpio](abyz.me.uk/lg/download.html) and follow the installation guide
+Download [lgpio](https://abyz.me.uk/lg/download.html) and follow the installation guide
 
 # Expected Behavior
