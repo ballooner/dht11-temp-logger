@@ -10,6 +10,15 @@ enum ERR_E
 	GPIO_ALERT_FAIL = -3,
 };
 
+struct DHT_INFO
+{
+	uint8_t rhIntegral;
+	uint8_t rhDecimal;
+	uint8_t tIntegral;
+	uint8_t tDecimal;
+} typedef dht_data_t;
+
+dht_data_t dhtInfo;
 uint64_t previous_timestamp;
 
 // Send the start signal to the DHT11
@@ -45,7 +54,7 @@ int main(void)
 	lgGpioSetAlertsFunc(gpioHandle, GPIO_PIN, readSignal, 0);
 
 	previous_timestamp = lguTimestamp();
-	if (lgGpioClaimAlert(gpioHandle, LG_SET_PULL_NONE, LG_BOTH_EDGES, GPIO_PIN, -1) < 0) 
+	if (lgGpioClaimAlert(gpioHandle, LG_SET_PULL_NONE, LG_RISING_EDGE, GPIO_PIN, -1) < 0) 
 	{
 		retVal = GPIO_ALERT_FAIL;
 		goto cleanup_claim_fail;
