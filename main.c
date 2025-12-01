@@ -5,21 +5,24 @@
 
 enum ERR_E
 {
-	GPIO_OPEN_FAIL = -1,
+	GPIO_OPEN_FAIL  = -1,
 	GPIO_CLAIM_FAIL = -2,
 	GPIO_ALERT_FAIL = -3,
 };
 
-struct DHT_INFO
+typedef struct DHT_INFO
 {
 	uint8_t rhIntegral;
 	uint8_t rhDecimal;
 	uint8_t tIntegral;
 	uint8_t tDecimal;
-} typedef dht_data_t;
+	uint8_t checkSum;
+} dhtData_t, *dhtData_p;
 
-dht_data_t dhtInfo;
-uint64_t previous_timestamp;
+dhtData_t dhtInfo;
+int bits[40];
+uint64_t previousTimestamp  = -1;
+int bitsReceived = 0;
 
 // Send the start signal to the DHT11
 // Returns:
@@ -53,7 +56,6 @@ int main(void)
 	// Read the signal
 	lgGpioSetAlertsFunc(gpioHandle, GPIO_PIN, readSignal, 0);
 
-	previous_timestamp = lguTimestamp();
 	if (lgGpioClaimAlert(gpioHandle, LG_SET_PULL_NONE, LG_RISING_EDGE, GPIO_PIN, -1) < 0) 
 	{
 		retVal = GPIO_ALERT_FAIL;
@@ -61,6 +63,11 @@ int main(void)
 	}
 
 	lguSleep(10);
+
+	for (int i = 0; i < 40; i++)
+	{
+		printf("Bit %d: %d\n", i, bits[i]);
+	}
 	
 	// Program cleanup labels
 	cleanup_claim_fail:
@@ -95,11 +102,30 @@ int sendStartSignal(int handle, int flags, int pin)
 
 void readSignal(int num_alerts, lgGpioAlert_p alerts, void *userdata)
 {
+	bitsReceived++;
+
+	uint64_t latestTimestamp = alerts[num_alerts - 1].report.timestamp;
+
+	// The first two voltage up signals we receive are just the DHT telling us
+	// it is ready to send data
+	if (bitsReceived <= 2)
+	{
+		previousTimestamp = latestTimestamp;
+		return;
+	}
+	
+	// timestamps are in nanoseconds so we normalize to microseconds
+	uint64_t timeDifferenceMicroseconds = (latestTimestamp - previousTimestamp) / 1000;
+
+	bits[bitsReceived - 3] = timeDifferenceMicroseconds - 50 < 50 ? 0 : 1;
+	printf("Bit %d: %d\n", bitsReceived - 3, timeDifferenceMicroseconds - 50 < 50 ? 0 : 1);
+
+	// Print received alerts
 	for (int i = 0; i < num_alerts; i++)
 	{
-		printf("Timestamp: %"PRIu64", Level: %d, Time difference: %"PRIu64" (%d of %d)\n",
-			       	alerts[i].report.timestamp, alerts[i].report.level, (alerts[i].report.timestamp - previous_timestamp) / 1000, i + 1, num_alerts);
+		printf("Level: %d, Time difference: %"PRIu64" (%d of %d) Bit #: %d\n",
+			       	alerts[i].report.level, timeDifferenceMicroseconds, i + 1, num_alerts, bitsReceived);
 	}
 
-	previous_timestamp = alerts[num_alerts - 1].report.timestamp;
+	previousTimestamp = latestTimestamp;
 }
