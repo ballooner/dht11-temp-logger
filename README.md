@@ -3,7 +3,7 @@
 # How to run
 ```console
 make
-sudo ./logger
+./logger
 ```
 
 # Required Hardware
@@ -19,3 +19,4 @@ Connect DHT11 - to a ground pin
 Download [lgpio](https://abyz.me.uk/lg/download.html) and follow the installation guide
 
 # Expected Behavior
+After running the program it will print the Humidity and Temperature after 2 seconds have passed.

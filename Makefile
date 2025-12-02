@@ -1,6 +1,6 @@
 CC := gcc
 C_FLAGS := -Wall
-LINK_LIBS := lgpio
+LIBS := -llgpio -lm
 
 logger: main.c
-	$(CC) $(C_FLAGS) main.c -o logger -l$(LINK_LIBS)
+	$(CC) $(C_FLAGS) main.c -o logger $(LIBS)
